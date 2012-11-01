@@ -3,101 +3,68 @@
         <title>Billboard Chart Visualization</title>
         <script type="text/javascript" src="d3.v2.min.js"></script>
 		<style type="text/css">
-			.data-line {
-				stroke-width: 2;
-				fill: none;
-				stroke-dasharray: 0;
-			}
-
-            .point {
-                stroke: #aaa;
-                fill: white;
-                stroke-width: 3;
+            body{
+                background-color: white;
             }
 
+            .arc{
+                stroke: #eee;
+                background-color: white;
+            }
 		</style>
     </head>
     <body>
         <script type="text/javascript">
-            d3.text("chart-data.csv", function(unparsedData){
-                //parse the csv data
-                var parsedData = d3.csv.parse(unparsedData);
-                var data = [];
+            var width = 1300,
+                height = 1000,
+                radius = Math.min(width, height) / 2,
+                colorScale = d3.scale.category20c();    
 
-                //number of years we are tracking
-                var years = 23;
+            var band_width = 8;
+            var gap = 2;
+            var years = 23;
+            var num_artists = 47;
+            var angle = 2*Math.PI/(years+1);
+            console.log("the angle is"+angle);
 
-                //processing the data into arrays of objects
-                var temp_array = [];
-                var temp_object = null;
-                var counter = 0;
-                for(i = 0; i < parsedData.length; i++){
-                    temp_object = {
-                        artist: parsedData[i]["Artist"],
-                        rank: parsedData[i]["Yearly Rank"],
-                        album: parsedData[i]["Album"],
-                        track: parsedData[i]["Track"]
-                    };
-                    counter++;
-                    if(counter == years+1){
-                        counter = 0;
-                        data.push(temp_array);
-                        temp_array = [];
-                        temp_array.push(temp_object);
-                    }
-                    else{
-                        temp_array.push(temp_object);
-                    }
-                }
+            var vis = d3.select("body").append("svg")
+                         .attr("width", width)
+                         .attr("height", height)
+                      .append("svg:g")
+                         .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 
-                var padding = 50;
-                var h = 600;
-                var w = 1300;
-
-                var xScale = d3.scale.linear().domain([1990, 2012]).range([padding, w - padding]);
-                var yScale = d3.scale.linear().domain([450, 1]).range([h - padding, padding]);
-                var colorScale = d3.scale.category20();
-
-                var vis = d3.select("body")
-                			.append("svg")
-                			.attr("width", w)
-                			.attr("height", h)
-                        .append("svg:g");
-
-                var line = d3.svg.line()
-                				 .x(function(d, i){
-                                    console.log("x = "+(1990+i));
-                				 	return xScale(1990+i);
-                				 })
-                				 .y(function(d){
-                                    console.log("y = "+d.rank);
-                				 	return yScale(d.rank);
-                				 })
-                				 .interpolate("linear");
-
-                var paths = vis.selectAll(".data-line")
-                .data(data)
-                .enter().append("svg:g");
-
-                paths.append("path")
-                				.attr("class", "data-line")
-                                .attr("stroke", function(d, i){return colorScale(Math.floor(20*Math.random()))})
-                				.style("opacity", 0.6)
-                				.attr("d", line);
-
-
-                paths.selectAll(".point")
-                    .data(function(d){return d})
-                    .enter().append("svg:circle")
-                        .attr("class", 'point')
-                        .attr("r", 4)
-                        .attr("cx", function(d, i){return xScale(i+1990)})
-                        .attr("cy", function(d){return yScale(d.rank)})
-                        .on('mouseover', function(){return d3.select(this).attr('r', 8)})
-                        .on('mouseout', function(){return d3.select(this).attr('r', 4)})
-                        .on('click', function(d, i){ alert(d.rank+" "+d.artist) });
-                        
+            var arc = d3.svg.arc()
+            .startAngle(function(d, i){
+                console.log("track   " + d.Track +"  " + (d.Year - 1990)*angle);
+                return (d.Year - 1990 + 1)*angle;
+            })
+            .endAngle(function(d, i){
+                return (d.Year - 1991 + 1)*angle;
+            })
+            .innerRadius(function(d, i){  
+                return (gap + band_width) * (num_artists -1 - d.LastRank) + gap;
+            })
+            .outerRadius(function(d, i){
+                return (gap + band_width) * (num_artists - d.LastRank);
             });
+
+            d3.json("chart-data.json", function(json){
+                vis.selectAll(".arc")
+                    .data(json)
+                    .enter()
+                    .append("path")
+                    .attr("class", "arc")
+                    .attr("fill", "#FF2240")
+                    .attr("opacity", function(d){
+                        return (1 - d.High/100);
+                    })
+                    .attr("d", arc)
+                    .on('mouseover', function(){return d3.select(this).attr('stroke-width', 4)})
+                    .on('mouseout', function(){return d3.select(this).attr('stroke-width', 0)})
+                    .on('click', function(d, i){ window.location.href = "artist.html?query="+d.Artist });
+            });
+
+
         </script>
     </body>
 </html>
