@@ -24,8 +24,7 @@
             var gap = 2;
             var years = 23;
             var num_artists = 47;
-            var angle = 2*Math.PI/(years+1);
-            console.log("the angle is"+angle);
+            var angle = 2*Math.PI/(years+1); //angle of every year shown
 
             var vis = d3.select("body").append("svg")
                          .attr("width", width)
@@ -33,9 +32,9 @@
                       .append("svg:g")
                          .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 
+            //method to draw a single arc
             var arc = d3.svg.arc()
             .startAngle(function(d, i){
-                console.log("track   " + d.Track +"  " + (d.Year - 1990)*angle);
                 return (d.Year - 1990 + 1)*angle;
             })
             .endAngle(function(d, i){
@@ -56,7 +55,7 @@
                     .attr("class", "arc")
                     .attr("fill", "#FF2240")
                     .attr("opacity", function(d){
-                        return (1 - d.High/100);
+                        return (1 - d.High/100); //opacity based on the highest rack the artist achieved that year
                     })
                     .attr("d", arc)
                     .on('mouseover', function(){return d3.select(this).attr('stroke-width', 4)})

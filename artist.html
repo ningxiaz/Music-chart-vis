@@ -48,6 +48,7 @@
                       .append("svg:g")
                          .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 
+            //method to draw data lines
             var line = d3.svg.line()
                                  .x(function(d, i){
                                     //console.log(d);
@@ -62,6 +63,7 @@
                                  })
                                  .interpolate("cardinal");
            
+            //method to draw coordinates
             var coor = d3.svg.line()
                                 .x(function(d, i){
                                     return Math.cos(d*angle-Math.PI/2)*i*radius;
@@ -71,6 +73,7 @@
                                 })
                                 .interpolate("linear");
 
+            //draw coordinates
             vis.selectAll(".coordinates")
                         .data(coordinates)
                         .enter()
@@ -81,13 +84,14 @@
                         .attr("opacity", 0.8)
                         .attr("d", coor);
 
+            //get the requested artist
             var url = window.location.href;
             var query = url.split("?")[1].split("=")[1];
             var query = unescape(query);
             //console.log(query);
             
+            //draw data lines and points
             d3.json("artist.json", function(json){
-
                     var data = json[query];
                     if(data!=undefined){
                         var path = vis.selectAll(".data-line")
@@ -100,8 +104,6 @@
                             .attr("stroke", "#FF2240")
                             .attr("opacity", 0.8)
                             .attr("d", line);
-
-                        
 
                         path.selectAll(".point")
                             .data(function(d){return d})
