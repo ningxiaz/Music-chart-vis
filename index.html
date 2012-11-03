@@ -3,6 +3,7 @@
         <title>Billboard Chart Visualization</title>
         <script type="text/javascript" src="d3.v2.min.js"></script>
         <script type="text/javascript" src="jquery-1.8.2.min.js"></script>
+        <link href='http://fonts.googleapis.com/css?family=Droid+Serif:400,700' rel='stylesheet' type='text/css'>
         <link type="text/css" rel="stylesheet" href="./main.css"/>
 		<style type="text/css">
             .arc{
@@ -38,8 +39,10 @@
             $(document).ready(function(){
                 $('#back a').click(function(){
                     $('#line_chart').fadeOut();
+                    $('#line_chart').empty();
                     $('#back').fadeOut();
                     $('#arc_chart').fadeIn();
+                    $('#instruct').fadeIn();
                 });
             });
         </script>
@@ -49,29 +52,26 @@
                     <h1>
                     Active History of the Top 100 Hottest Artists from 1990-2012</h1>
                 </div>
-                <div id="back">
-                    <h3></h3>
-                    <a href="#">Back to All Artists</a>
-                </div>
                 <div id="arc_chart"></div>
                 <div id="line_chart"></div>
+            </div>
+            <div id="back">
+                    <h3></h3>
+                    <a href="#">Back to All Artists</a>
+            </div>
+            <div id="instruct">
+                <h3>Click the arc to see chart history of one artist</h3>
             </div>
             <div class="artist_intro">
                 <div class="intro">
                     <div class="cover">
+                        <img />
                     </div>
                     <div class="info">
-                        <div id="track">
-                        </div>
-                        <div class="artist_line">
-                        <p>by</p><div id="artist"></div>
-                        </div>
-                        <div class="album_line">
-                        <p>on</p><div id="album"></div>
-                        </div>
-                        <div class="rank_line">
-                        <p>highest chart</p><div id="highest"></div>
-                        </div>
+                        <h3 id="track"></h3>
+                        <h4 class="artist_line">by <span id="artist"></span></h4>
+                        <h4 class="artist_album">from <span id="album"></span></h4>
+                        <h4 class="artist_chart">hits #<span id="highest"></span> in <span id="year"></span></h4>
                     </div>
                 </div>
             </div>
@@ -134,7 +134,7 @@
                     .attr("d", arc)
                     .on('mouseover', mouseover)
                     .on('mouseout', mouseout)
-                    .on('click', showDetails);
+                    .on('click', show_details);
             });
 
             function mouseover(e) {
@@ -142,7 +142,7 @@
                 .attr("fill","#b9b9b9")
                 .transition().duration(100).attr("fill",function(d, i) { return (d.Artist === e.Artist) ? "#FF2240":"#b9b9b9"; });
                 console.log(e.Artist+"     "+e.Track);
-                newtrack(e.Artist,e.Track,e.Album,e.High);  //write info to black window
+                write_info(e.Artist, e.Track, e.Album, e.High, e.Year);
                 return $(document).ready(function(){
                         $(".intro").stop(false, true).fadeIn("fast")
                 });
@@ -159,18 +159,29 @@
              }
 
              //the function to write info to black window
-            function newtrack(artist,track,album,highest){
-                var blank = document.getElementById("track");
-                blank.innerText = track;
-                var blank = document.getElementById("artist");
-                blank.innerText = artist;
-                var blank = document.getElementById("album");
-                blank.innerText = album;
-                var blank = document.getElementById("highest");
-                blank.innerText = highest;
+            function write_info(artist, track, album, highest, year){
+                $.getJSON("http://ws.audioscrobbler.com/2.0/?method=artist.search&api_key=36ca02e767da5319c71abe6f2ee4437f&format=json&artist=" + artist + "&callback=?", function(json) {
+                    if (json.results.artistmatches.artist.length!=0){
+                        console.log(json);
+                        image = json.results.artistmatches.artist[0].image[2]['#text'];
+                        if(artist === 'LL Cool J'){
+                            image = 'http://userserve-ak.last.fm/serve/500/31915523/LL+Cool+J++1986.jpg';
+                        }
+                        $('.cover img').attr('src', image);
+                    }
+                });
+                
+                        
+                $('#track').html(track);
+                $('#artist').html(artist);
+                $('#album').html(album);
+                $('#highest').html(highest);
+                $('#year').html(year);
             }
 
-            function showDetails(e){
+            var artist; //global variable for the details view
+
+            function show_details(e){
                 var padding = 50;
                 var angle_line = 2*Math.PI/years; //angle of every year shown in the line graph
 
@@ -207,10 +218,10 @@
                 //method to draw coordinates
                 var coor = d3.svg.line()
                                     .x(function(d, i){
-                                        return Math.cos(d*angle_line-Math.PI/2)*i*(radius - padding);
+                                        return Math.cos(d*angle_line-Math.PI/2)*i*(radius);
                                     })
                                     .y(function(d, i){
-                                        return Math.sin(d*angle_line-Math.PI/2)*i*(radius - padding);
+                                        return Math.sin(d*angle_line-Math.PI/2)*i*(radius);
                                     })
                                     .interpolate("linear");
 
@@ -225,9 +236,11 @@
                             .attr("opacity", 0.8)
                             .attr("d", coor);
                 
+                artist = e.Artist;
+
                 //draw data lines and points
                 d3.json("artist.json", function(json){
-                        var data = json[e.Artist];
+                        var data = json[artist];
                         if(data!=undefined){
                             var path = vis_line.selectAll(".data-line")
                                 .data([data])
@@ -255,16 +268,29 @@
                                         alpha = (d.year - 1990)*angle_line-Math.PI/2;
                                         return r*Math.sin(alpha);
                                     })
-                                    .on('mouseover', function(){return d3.select(this).attr('r', 8)})
-                                    .on('mouseout', function(){return d3.select(this).attr('r', 3)})
-                                    .on('click', function(d, i){ alert(d.year+" "+d.rank+" "+d.track) });
+                                    .on('mouseover', mouseover_line)
+                                    .on('mouseout', mouseout_line);
                             }
                     });
                 $('#arc_chart').fadeOut();
+                $('#instruct').fadeOut();
                 $('#line_chart').fadeIn();
                 $('#back').fadeIn();
                 $('#back h3').html(e.Artist);
 
+            }
+
+            function mouseover_line(e){
+                write_info(artist, e.track, e.album, e.rank, e.year);
+                return $(document).ready(function(){
+                        $(".intro").stop(false, true).fadeIn("fast")
+                });
+            }
+
+            function mouseout_line(e){
+                return $(document).ready(function(){
+                        $(".intro").stop(false, true).fadeOut("fast")
+                });
             }
 
         </script>

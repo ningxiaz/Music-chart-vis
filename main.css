@@ -78,6 +78,10 @@ body{background-color: #F5F5F5;}
 	width:1000px;
 }
 
+#arc_chart, #line_chart{
+	margin-top: 20px;
+}
+
 .title{
 	border-bottom:1px dashed #B3B3B3;
 
@@ -93,29 +97,29 @@ body{background-color: #F5F5F5;}
 }
 
 .artist_intro{
-	position:fixed;
-	left:1000px;
-	background-color:#F7F7F7;
+	position:absolute;
+	left:840px;
+	top: 180px;
 }
 
 .intro{
-	width:300px;
-	height:110px;
 	display:none;
 	font-size:12px;
-	background-color:#3F3F3F;
-	color:white;
-	padding-top:10px;
-	padding-left:10px;
-
+	color:#4C4C4C;
+	padding: 10px;
 }
 
 .cover{
-	float:left;
-	position:relative;
-	width:100px;
-	height:100px;
-	background-color:#83B9D6;
+	float: left;
+	padding: 5px;
+	background-color: white;
+	-webkit-box-shadow: 1px 0px 8px rgba(50, 50, 50, 0.5);
+	-moz-box-shadow:    1px 0px 8px rgba(50, 50, 50, 0.5);
+	box-shadow:         1px 0px 8px rgba(50, 50, 50, 0.5);
+}
+
+.cover img{
+	width:250px;
 }
 
 .info{
@@ -124,79 +128,66 @@ body{background-color: #F5F5F5;}
 	width:180px;
 }
 
-
-.intro .artist_line{
-	margin-top:10px;
+span {
+	display: inline;
 }
 
-.artist_line p{
-	display:block;
-	float:left;
-	position:relative;
-	margin-top:4px;
-	font-size:9px;
-	color:#A6C2F4;
+h3#track{
+	font-family: 'Droid Serif', serif;
+	font-weight: 700;
+	font-style: italic;
+	font-size: 30px;
+	line-height: 36px;
 }
 
-.artist_line #artist{
-	margin-left:15px;
-	font-size:15px;
-	font-weight:bold;
+.info h4{
+	font-size: 16px;
+	line-height: 20px;
+	font-weight: 300;
+	font-style: normal;
+	padding: 3px 0;
 }
 
-.intro .album_line{
-	margin-top:10px;
+#artist, #album, #highest, #year{
+	font-style: italic;
 }
 
-.album_line p{
-	display:block;
-	float:left;
-	position:relative;
-	margin-top:2px;
-	font-size:9px;
-	color:#A6C2F4;
-}
-
-.album_line #album{
-	margin-left:15px;
-	font-size:12px;
-	font-weight:bold;
-}
-
-.intro .rank_line{
-	margin-top:30px;
-}
-
-.rank_line p{
-	display:block;
-	float:left;
-	position:relative;
-	margin-top:2px;
-	font-size:9px;
-	color:#A6C2F4;
-}
-
-.rank_line #highest{
-	margin-left:80px;
-	font-size:12px;
-	font-weight:bold;
+#artist, #highest{
+	color: #FF2240;
 }
 
 #back{
+	position:absolute;
+	left:860px;
+	top: 100px;
 	display: none;
 }
 
 #back h3{
-	font-size: 24px;
-	color: #333;
-	margin: .3em 0 .1em 0;
+	font-family: 'Droid Serif', serif;
+	font-weight: 700;
+	font-size: 28px;
+	line-height: 36px;
 }
 
 #back a{
 	color: #FF2240;
-	font-size: 14px;
+	font-size: 16px;
 }
 
 #back a:hover{
 	color: #E8677D;
+}
+
+#instruct{
+	position:absolute;
+	left:860px;
+	top: 100px;
+}
+
+#instruct h3{
+	font-size: 18px;
+	color: #aaa;
+	font-weight: 300;
+	font-style: italic;
 }
