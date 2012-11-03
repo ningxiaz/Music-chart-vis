@@ -2,31 +2,94 @@
     <head>
         <title>Billboard Chart Visualization</title>
         <script type="text/javascript" src="d3.v2.min.js"></script>
+        <script type="text/javascript" src="jquery-1.8.2.min.js"></script>
+        <link type="text/css" rel="stylesheet" href="./main.css"/>
 		<style type="text/css">
-            body{
-                background-color: white;
-            }
-
             .arc{
                 stroke: #eee;
                 background-color: white;
+            }
+
+            #line_chart {
+                display: none;
+            }
+
+            .data-line {
+                stroke-width: 2;
+                fill: none;
+                stroke-dasharray: 0;
+            }
+
+            .coordinates {
+                stroke-width: 2;
+                fill: none;
+                stroke-dasharray: 0;
+            }
+
+            .point {
+                stroke: #aaa;
+                fill: white;
+                stroke-width: 2;
             }
 		</style>
     </head>
     <body>
         <script type="text/javascript">
-            var width = 1300,
-                height = 1000,
+            $(document).ready(function(){
+                $('#back a').click(function(){
+                    $('#line_chart').fadeOut();
+                    $('#back').fadeOut();
+                    $('#arc_chart').fadeIn();
+                });
+            });
+        </script>
+        <div class="main-wrapper clearfix" id="container">
+            <div class="left-column">
+                <div class="title">
+                    <h1>
+                    Active History of the Top 100 Hottest Artists from 1990-2012</h1>
+                </div>
+                <div id="back">
+                    <h3></h3>
+                    <a href="#">Back to All Artists</a>
+                </div>
+                <div id="arc_chart"></div>
+                <div id="line_chart"></div>
+            </div>
+            <div class="artist_intro">
+                <div class="intro">
+                    <div class="cover">
+                    </div>
+                    <div class="info">
+                        <div id="track">
+                        </div>
+                        <div class="artist_line">
+                        <p>by</p><div id="artist"></div>
+                        </div>
+                        <div class="album_line">
+                        <p>on</p><div id="album"></div>
+                        </div>
+                        <div class="rank_line">
+                        <p>highest chart</p><div id="highest"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            var width = 750,
+                height = 700,
                 radius = Math.min(width, height) / 2,
                 colorScale = d3.scale.category20c();    
 
-            var band_width = 8;
-            var gap = 2;
+            var band_width = 6;
+            var gap = 1;
             var years = 23;
             var num_artists = 47;
-            var angle = 2*Math.PI/(years+1); //angle of every year shown
+            var angle = 2*Math.PI/(years+1); //angle of every year shown in the arc graph
 
-            var vis = d3.select("body").append("svg")
+            var vis = d3.select("#arc_chart").append("svg")
                          .attr("width", width)
                          .attr("height", height)
                       .append("svg:g")
@@ -47,6 +110,17 @@
                 return (gap + band_width) * (num_artists - d.LastRank);
             });
 
+            //draw the starting line
+            var start_line = d3.svg.line();
+
+            vis.append("path")
+                .attr("class","start_line")
+                .attr("stroke-width",1)
+                .attr("stroke","black")
+                .attr("opacity", 0.4)
+                .attr("d","M 0 0"+"L 0 -500");
+
+            //read in data and draw arcs
             d3.json("chart-data.json", function(json){
                 vis.selectAll(".arc")
                     .data(json)
@@ -58,11 +132,140 @@
                         return (1 - d.High/100); //opacity based on the highest rack the artist achieved that year
                     })
                     .attr("d", arc)
-                    .on('mouseover', function(){return d3.select(this).attr('stroke-width', 4)})
-                    .on('mouseout', function(){return d3.select(this).attr('stroke-width', 0)})
-                    .on('click', function(d, i){ window.location.href = "artist.html?query="+d.Artist });
+                    .on('mouseover', mouseover)
+                    .on('mouseout', mouseout)
+                    .on('click', showDetails);
             });
 
+            function mouseover(e) {
+                vis.selectAll(".arc")
+                .attr("fill","#b9b9b9")
+                .transition().duration(100).attr("fill",function(d, i) { return (d.Artist === e.Artist) ? "#FF2240":"#b9b9b9"; });
+                console.log(e.Artist+"     "+e.Track);
+                newtrack(e.Artist,e.Track,e.Album,e.High);  //write info to black window
+                return $(document).ready(function(){
+                        $(".intro").stop(false, true).fadeIn("fast")
+                });
+
+            }
+
+            function mouseout(e) {
+                vis.selectAll(".arc")
+                .transition().attr("fill","#FF2240");
+                d3.select(this).attr('stroke-width', 0);
+                return $(document).ready(function(){
+                        $(".intro").stop(false, true).fadeOut("fast")
+                    });
+             }
+
+             //the function to write info to black window
+            function newtrack(artist,track,album,highest){
+                var blank = document.getElementById("track");
+                blank.innerText = track;
+                var blank = document.getElementById("artist");
+                blank.innerText = artist;
+                var blank = document.getElementById("album");
+                blank.innerText = album;
+                var blank = document.getElementById("highest");
+                blank.innerText = highest;
+            }
+
+            function showDetails(e){
+                var padding = 50;
+                var angle_line = 2*Math.PI/years; //angle of every year shown in the line graph
+
+                var coordinates = [];
+                var temp = [];
+                for(i = 0; i < years; i++){
+                    temp = [i, i];
+                    coordinates.push(temp);
+                }
+
+                var rScale = d3.scale.linear().domain([100, 0]).range([0, radius - padding]);
+
+                var vis_line = d3.select("#line_chart").append("svg")
+                             .attr("width", width)
+                             .attr("height", height)
+                          .append("svg:g")
+                             .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+                //method to draw data lines
+                var line = d3.svg.line()
+                                     .x(function(d, i){
+                                        //console.log(d);
+                                        r = rScale(d.rank);
+                                        alpha = (d.year - 1990)*angle_line-Math.PI/2;
+                                        return r*Math.cos(alpha);
+                                     })
+                                     .y(function(d){
+                                        r = rScale(d.rank);
+                                        alpha = (d.year - 1990)*angle_line-Math.PI/2;
+                                        return r*Math.sin(alpha);
+                                     })
+                                     .interpolate("cardinal");
+               
+                //method to draw coordinates
+                var coor = d3.svg.line()
+                                    .x(function(d, i){
+                                        return Math.cos(d*angle_line-Math.PI/2)*i*(radius - padding);
+                                    })
+                                    .y(function(d, i){
+                                        return Math.sin(d*angle_line-Math.PI/2)*i*(radius - padding);
+                                    })
+                                    .interpolate("linear");
+
+                //draw coordinates
+                vis_line.selectAll(".coordinates")
+                            .data(coordinates)
+                            .enter()
+                            .append("svg:g")
+                            .append("path")
+                            .attr("class", "coordinates")
+                            .attr("stroke", "#ccc")
+                            .attr("opacity", 0.8)
+                            .attr("d", coor);
+                
+                //draw data lines and points
+                d3.json("artist.json", function(json){
+                        var data = json[e.Artist];
+                        if(data!=undefined){
+                            var path = vis_line.selectAll(".data-line")
+                                .data([data])
+                                .enter()
+                                .append("svg:g");
+
+                            path.append("path")
+                                .attr("class", "data-line")
+                                .attr("stroke", "#FF2240")
+                                .attr("opacity", 0.8)
+                                .attr("d", line);
+
+                            path.selectAll(".point")
+                                .data(function(d){return d})
+                                .enter().append("svg:circle")
+                                    .attr("class", 'point')
+                                    .attr("r", 4)
+                                    .attr("cx", function(d, i){
+                                        r = rScale(d.rank);
+                                        alpha = (d.year - 1990)*angle_line-Math.PI/2;
+                                        return r*Math.cos(alpha);
+                                    })
+                                    .attr("cy", function(d){
+                                        r = rScale(d.rank);
+                                        alpha = (d.year - 1990)*angle_line-Math.PI/2;
+                                        return r*Math.sin(alpha);
+                                    })
+                                    .on('mouseover', function(){return d3.select(this).attr('r', 8)})
+                                    .on('mouseout', function(){return d3.select(this).attr('r', 3)})
+                                    .on('click', function(d, i){ alert(d.year+" "+d.rank+" "+d.track) });
+                            }
+                    });
+                $('#arc_chart').fadeOut();
+                $('#line_chart').fadeIn();
+                $('#back').fadeIn();
+                $('#back h3').html(e.Artist);
+
+            }
 
         </script>
     </body>
