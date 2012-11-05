@@ -43,6 +43,7 @@
                     $('#back').fadeOut();
                     $('#arc_chart').fadeIn();
                     $('#instruct').fadeIn();
+                    $('.legend').fadeIn();
                 });
             });
         </script>
@@ -50,30 +51,52 @@
             <div class="left-column">
                 <div class="title">
                     <h1>
-                    Active History of the Top 100 Hottest Artists from 1990-2012</h1>
+                    Active History of Hottest Artists on Billboard Top 10 in 1990-2012</h1>
                 </div>
                 <div id="arc_chart"></div>
                 <div id="line_chart"></div>
             </div>
-            <div id="back">
+
+            <div class="artist_intro">
+                <div id="back">
                     <h3></h3>
                     <a href="#">Back to All Artists</a>
-            </div>
-            <div id="instruct">
-                <h3>Click the arc to see chart history of one artist</h3>
-            </div>
-            <div class="artist_intro">
+                </div>
+                <div id="instruct">
+                    <h3>Click the arc to see chart history of one artist</h3>
+                    <h3>Chart history from Billboard Hot 100</h3>
+                </div>
                 <div class="intro">
                     <div class="cover">
                         <img />
                     </div>
                     <div class="info">
-                        <h3 id="track"></h3>
-                        <h4 class="artist_line">by <span id="artist"></span></h4>
-                        <h4 class="artist_album">from <span id="album"></span></h4>
-                        <h4 class="artist_chart">hits #<span id="highest"></span> in <span id="year"></span></h4>
+                        <div class="track row">
+                            <h3 id="track"></h3>
+                        </div>
+                        <div class="artist row">
+                            <div class="left">by</div>
+                            <div class="right" id="artist"></div>
+                        </div>
+                        <div class="album row">
+                            <div class="left">from</div>
+                            <div class="right" id="album"></div>
+                        </div>
+                        <div class="chart row">
+                            <div class="left">hits</div>
+                            <div class="rank" id="highest"></div>
+                            <div class="in">in</div>
+                            <div class="y" id="year"></div>
+                        </div>
                     </div>
                 </div>
+            </div>
+            <div class="legend">
+                    <div class="bar"></div>
+                    <div class="annotation">
+                        <p id="zero">No.100</p>
+                        <p id="full">No.1</p>
+                    </div>
             </div>
         </div>
 
@@ -94,6 +117,33 @@
                          .attr("height", height)
                       .append("svg:g")
                          .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+            
+            //method to append label of year
+            var t_padding = 10,
+                t_x = function(d){
+                    r = radius - t_padding;
+                    r_1 = angle/2
+                    theda = (d.Year - 1990)*angle-Math.PI/2;
+                    return r*Math.cos(theda+r_1);
+                },
+                t_y = function(d){
+                    r = radius - 10;
+                    theda = (d.Year - 1990)*angle-Math.PI/2;
+                    return r*Math.sin(theda+r_1);
+                };
+                l_x = function(d){
+                    r = radius - t_padding;
+                    r_1 = angle/2
+                    theda = (d.Year - 1990)*angle-Math.PI/2;
+                    return r*Math.cos(theda);
+                },
+                l_y = function(d){
+                    r = radius - 10;
+                    theda = (d.Year - 1990)*angle-Math.PI/2;
+                    return r*Math.sin(theda);
+            };
+
 
             //method to draw a single arc
             var arc = d3.svg.arc()
@@ -120,14 +170,35 @@
                 .attr("opacity", 0.4)
                 .attr("d","M 0 0"+"L 0 -500");
 
-            //read in data and draw arcs
+            //read in data
             d3.json("chart-data.json", function(json){
+
+                 //add year label
+                vis.selectAll("text")
+                .data(json)
+                .enter()
+                .append("text")
+                .attr("x", t_x)
+                .attr("y", t_y)
+                .attr("text-anchor","middle") //text are central aligned
+                .attr("fill",function(d){return "#666";})
+                .attr("transform", function(d, i){
+                            beta = (d.Year - 1990)*360/24+7.5;
+                            n = t_x(d);
+                            console.log(angle);
+                            return "rotate("+beta+","+t_x(d)+","+t_y(d)+")";}
+                            )
+                .text(function(d) {
+                            return d.Year; }
+                            );
+
+                //draw arcs
                 vis.selectAll(".arc")
                     .data(json)
                     .enter()
                     .append("path")
                     .attr("class", "arc")
-                    .attr("fill", "#FF2240")
+                    .attr("fill", "#b9b9b9")
                     .attr("opacity", function(d){
                         return (1 - d.High/100); //opacity based on the highest rack the artist achieved that year
                     })
@@ -136,6 +207,7 @@
                     .on('mouseout', mouseout)
                     .on('click', show_details);
             });
+
 
             function mouseover(e) {
                 vis.selectAll(".arc")
@@ -151,7 +223,7 @@
 
             function mouseout(e) {
                 vis.selectAll(".arc")
-                .transition().attr("fill","#FF2240");
+                .transition().attr("fill","#b9b9b9");
                 d3.select(this).attr('stroke-width', 0);
                 return $(document).ready(function(){
                         $(".intro").stop(false, true).fadeOut("fast")
@@ -183,7 +255,7 @@
 
             function show_details(e){
                 var padding = 50;
-                var angle_line = 2*Math.PI/years; //angle of every year shown in the line graph
+                var angle_line = 2*Math.PI/(years+1); //angle of every year shown in the line graph
 
                 var coordinates = [];
                 var temp = [];
@@ -218,10 +290,10 @@
                 //method to draw coordinates
                 var coor = d3.svg.line()
                                     .x(function(d, i){
-                                        return Math.cos(d*angle_line-Math.PI/2)*i*(radius);
+                                        return Math.cos(d*angle_line-Math.PI/2)*i*(radius- padding);
                                     })
                                     .y(function(d, i){
-                                        return Math.sin(d*angle_line-Math.PI/2)*i*(radius);
+                                        return Math.sin(d*angle_line-Math.PI/2)*i*(radius- padding);
                                     })
                                     .interpolate("linear");
 
@@ -235,7 +307,28 @@
                             .attr("stroke", "#ccc")
                             .attr("opacity", 0.8)
                             .attr("d", coor);
-                
+
+                //add year label
+                d3.json("chart-data.json", function(json){
+                    vis_line.selectAll("text")
+                    .data(json)
+                    .enter()
+                    .append("text")
+                    .attr("x", l_x)
+                    .attr("y", l_y)
+                    .attr("text-anchor","middle") //text are central aligned
+                    .attr("fill",function(d){return "#666";})
+                    .attr("transform", function(d, i){
+                                beta = (d.Year - 1990)*360/24;
+                                n = t_x(d);
+                                console.log(angle);
+                                return "rotate("+beta+","+l_x(d)+","+l_y(d)+")";}
+                                )
+                    .text(function(d) {
+                                return d.Year; }
+                                ); 
+                });
+               
                 artist = e.Artist;
 
                 //draw data lines and points
@@ -273,10 +366,11 @@
                             }
                     });
                 $('#arc_chart').fadeOut();
-                $('#instruct').fadeOut();
+                $('#instruct').fadeOut("fast");
                 $('#line_chart').fadeIn();
                 $('#back').fadeIn();
                 $('#back h3').html(e.Artist);
+                $('.legend').fadeOut();
 
             }
 
@@ -292,6 +386,7 @@
                         $(".intro").stop(false, true).fadeOut("fast")
                 });
             }
+
 
         </script>
     </body>
